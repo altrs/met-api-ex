@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+<head>
+	<title>MET DIMENSIONS</title>
+	<meta name="description" content="Our first page">
+	<meta name="keywords" content="html tutorial template">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+	<style>
+		
+		body{
+			padding: 0px;
+			margin: 0px;
+		}
+
+		#container{
+			width: 100vw;
+			height: 99vh;
+			align-items: center;
+			justify-content: center;
+			justify-items: center;
+			text-align: center;
+			padding: 0px;
+			display: flex;
+			flex-direction: column;
+			margin: 0px;
+		}
+
+		#canvas-container{
+			border: 1px solid;
+			width: 400px;
+			height: 400px;
+			align-items: center;
+			justify-content: center;
+			justify-items: center;
+			text-align: center;
+			display: flex;
+			overflow: hidden;
+			margin-bottom: 20px;
+			margin-top: 20px;
+		}
+
+		h3{
+			margin: 0px;
+			padding: 0px;
+		}
+
+		p{
+			margin: 0px;
+			padding: 1px;
+		}
+
+	</style>
+</head>
+<body>
+
+	<div id="container">
+		<h3>MET DIMENSIONS</h3>
+		<p>Refresh to see more dimensions</p>
+		<div id="canvas-container"></div>
+		<div id="info-container">
+			<p id="title">Title: Loading</p>
+			<p id="artist">Artist: Loading</p>
+			<p id="measurements">Measurements: Loading</p>
+		</div>
+	</div>
+
+
+<script>
+
+	// dom
+	let title = document.getElementById("title");
+	let artist = document.getElementById("artist");
+	let measurements = document.getElementById("measurements");
+
+	// p5
+	let paintingDetails;
+
+	function setup() {
+	  getPaintings().then(details => {
+	    paintingDetails = details;
+	    const firstMeasurement = paintingDetails.measurements[0];
+
+	    if (firstMeasurement.elementMeasurements) {
+	        const width = firstMeasurement.elementMeasurements.Width;
+	        const height = firstMeasurement.elementMeasurements.Height;
+	        const mappedWidth = map(width, 0, 100, 0, width);
+	        const mappedHeight = map(height, 0, 100, 0, height);
+
+	        // set canvas size
+	        let canvas = createCanvas(mappedWidth, mappedHeight);
+	        canvas.parent('canvas-container');
+	      } else {console.log("Element measurements information not available");}
+	  }).catch(error => {console.error(error);});
+	}
+
+	function draw() {background(255, 236, 61);}
+
+	// met
+	async function getPaintings() {
+	  
+	  try {
+		// get all paintings
+		const response = await fetch("https://collectionapi.metmuseum.org/public/collection/v1/search?medium=Paintings&q=paintings");
+		const searchData = await response.json();
+
+		// get random painting
+		const randomIndex = Math.floor(Math.random() * searchData.objectIDs.length);
+		const randomPaintingId = searchData.objectIDs[randomIndex];
+		const paintingDetailsResponse = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomPaintingId}`);
+		const details = await paintingDetailsResponse.json();
+		console.log(details);
+
+		// get measurments
+		if (details.measurements && details.measurements.length > 0) {
+			const firstMeasurement = details.measurements[0];
+			if (firstMeasurement.elementMeasurements) {
+			  const width = firstMeasurement.elementMeasurements.Width;
+			  const height = firstMeasurement.elementMeasurements.Height;
+			  measurements.textContent = `Measurements: Width: ${width} cm, Height: ${height} cm`;
+			} else {measurements.textContent = "Measurements: Element measurements information not available";}
+		} else {measurements.textContent = "Measurements: Information not available";}
+
+		//get artist name
+		if (details.artistDisplayName) {
+			const artistName = details.artistDisplayName;
+			artist.textContent = `Artist: ${artistName}`;
+		} else {artist.textContent = "Artist information not available";}
+
+		//get title
+		if (details.title) {
+			const paintingTitle = details.title;
+			title.textContent = `Title: ${paintingTitle}`;
+		} else {title.textContent = "Title information not available";}
+
+		//retrn
+		return details;
+	  } catch (error) {throw error;}
+
+	}
+	
+</script>
+</body>
+</html>
